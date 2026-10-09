@@ -6,30 +6,26 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Server misconfigured' });
     }
 
-   if (req.method === 'GET') {
-    try {
-        const res2 = await fetch(TURSO_URL + '/v0/sql', {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
-            body: JSON.stringify([{
-                sql: 'SELECT name, guesses, time FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 50',
-                params: []
-            }])
-        });
-        const data = await res2.json();
-
-        if (!Array.isArray(data) || !data[0]) {
-            return res.json([]);
+    if (req.method === 'GET') {
+        try {
+            const data = await fetch(TURSO_URL + '/v0/sql', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
+                body: JSON.stringify([{
+                    sql: 'SELECT name, guesses, time, lang FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 50',
+                    params: []
+                }])
+            }).then(r => r.json());
+            if (!Array.isArray(data) || !data[0]) return res.json([]);
+            return res.json(data[0].columns || []);
+        } catch (err) {
+            return res.status(500).json({ error: 'Database error: ' + err.message });
         }
-        return res.json(data[0].columns || []);
-    } catch (err) {
-        return res.status(500).json({ error: 'Database error: ' + err.message });
     }
-    }   
 
     if (req.method === 'POST') {
-        const { name, guesses, time } = req.body;
-        if (!name || !guesses || time === undefined) {
+        const { name, guesses, time, lang } = req.body;
+        if (!name || !guesses || time === undefined || !lang) {
             return res.status(400).json({ error: 'Bad request' });
         }
         if (typeof name !== 'string' || name.length > 20) {
@@ -41,18 +37,21 @@ export default async function handler(req, res) {
         if (typeof time !== 'number' || time < 0 || time > 300) {
             return res.status(400).json({ error: 'Invalid time' });
         }
+        if (!['id', 'en'].includes(lang)) {
+            return res.status(400).json({ error: 'Invalid lang' });
+        }
         try {
             await fetch(TURSO_URL + '/v0/sql', {
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
                 body: JSON.stringify([{
-                    sql: 'INSERT INTO leaderboard (name, guesses, time) VALUES (?, ?, ?)',
-                    params: [name, guesses, time]
+                    sql: 'INSERT INTO leaderboard (name, guesses, time, lang) VALUES (?, ?, ?, ?)',
+                    params: [name, guesses, time, lang]
                 }])
             });
             return res.json({ ok: true });
         } catch (err) {
-            return res.status(500).json({ error: 'Database error' });
+            return res.status(500).json({ error: 'Database error: ' + err.message });
         }
     }
 

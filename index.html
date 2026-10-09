@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Wordle ID</title>
+    <title>Wordle</title>
 </head>
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,6 +46,23 @@
     }
 
     #leaderboard-btn:active { background: #3a3a3c; }
+
+    #lang-btn {
+        position: absolute;
+        top: 44px;
+        left: 12px;
+        background: none;
+        border: 2px solid #565758;
+        border-radius: 4px;
+        color: #818384;
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 4px 8px;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    #lang-btn:active { background: #3a3a3c; }
 
     #restart {
         position: absolute;
@@ -148,7 +165,13 @@
 
     .row button:active { background: #b0aea9; }
     .row button[data-action] { flex: 1.5; font-size: 0.7rem; }
-    .row button.used { display: none; }
+
+    .row button.used {
+        background: #121213;
+        color: #555;
+        pointer-events: none;
+    }
+
     .row button.green  { background: #538d4e; color: white; }
     .row button.yellow { background: #b59f3b; color: white; }
     .row button.gray   { background: #3a3a3c; color: white; }
@@ -210,6 +233,7 @@
 
     <div id="timer">00:00</div>
     <button id="leaderboard-btn" onclick="showLeaderboard()">H</button>
+    <button id="lang-btn" onclick="cycleLang()">ID</button>
     <button id="restart" onclick="newGame(); this.blur()">&#8635; Restart</button>
 
     <div class="board">
@@ -252,16 +276,59 @@ const TOTAL_TILES = ROWS * COLS;
 const TIME_LIMIT = 100;
 const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
+const LANGS = {
+    id: {
+        label: "ID",
+        wordlist: "https://raw.githubusercontent.com/thinsmn/wordlist-id/main/wordlist-id.txt",
+        fallback: ["RUMAH","KURSI","HUJAN","TIDUR","TEMAN","CINTA","PUTIH","PINTU","BUNGA","BANGU","SEKOL","KERJA","MAKAN","MINUM","BAGAI","BANYK","BESAR","BICAR","BIDAD","BINGK"],
+        t: {
+            loading: "Memuat kata...",
+            restart: "Restart",
+            leaderboard: "Leaderboard",
+            noData: "Belum ada data.",
+            serverError: "Server tidak tersedia. Coba lagi nanti.",
+            win: "Menang!",
+            lose: "Kalah! Jawaban: ",
+            tooSlow: "Terlalu lambat untuk leaderboard.",
+            saved: "Tersimpan di leaderboard!",
+            saveFail: "Gagal simpan. Server mungkin down.",
+            namePrompt: "Nama untuk leaderboard:",
+            close: "Tutup"
+        }
+    },
+    en: {
+        label: "EN",
+        wordlist: "https://raw.githubusercontent.com/tabatkins/wordle-list/main/words",
+        fallback: ["HOUSE","CHAIR","RAIN","SLEEP","FRIEND","LOVE","WHITE","DOOR","FLOWE","BUILD","SCHOI","WORK","EAT","DRINK","BEAUT","MANY","BIG","TALK","ANGEL","RING"],
+        t: {
+            loading: "Loading words...",
+            restart: "Restart",
+            leaderboard: "Leaderboard",
+            noData: "No data yet.",
+            serverError: "Server unavailable. Try again later.",
+            win: "Win!",
+            lose: "Lose! Answer: ",
+            tooSlow: "Too slow for leaderboard.",
+            saved: "Saved to leaderboard!",
+            saveFail: "Failed to save. Server may be down.",
+            namePrompt: "Name for leaderboard:",
+            close: "Close"
+        }
+    }
+};
+
+let currentLang = 'id';
 let WORDS = [];
 let answer = "";
 let row = 0;
 let col = 0;
 let gameOver = false;
-const usedLetters = new Set();
 const keyHistory = {};
 
 let timerInterval = null;
 let seconds = 0;
+
+function t() { return LANGS[currentLang].t; }
 
 const grid = document.getElementById('grid');
 const keyboard = document.getElementById('keyboard');
@@ -275,21 +342,35 @@ for (let i = 0; i < TOTAL_TILES; i++) {
 }
 
 async function loadWords() {
+    const lang = LANGS[currentLang];
+    document.getElementById('loading').style.display = 'flex';
+    document.getElementById('loading').textContent = lang.t.loading;
     try {
-        const res = await fetch('https://raw.githubusercontent.com/thinsmn/wordlist-id/main/wordlist-id.txt');
+        const res = await fetch(lang.wordlist);
         const text = await res.text();
         WORDS = text.split('\n')
             .map(w => w.trim().toUpperCase())
             .filter(w => w.length === COLS && /^[A-Z]+$/.test(w));
     } catch (err) {
-        WORDS = ["RUMAH","KURSI","HUJAN","TIDUR","TEMAN","CINTA",
-                 "PUTIH","PINTU","BUNGA","BANGU","SEKOL","KERJA",
-                 "MAKAN","MINUM","BAGAI","BANYK","BESAR","BICAR",
-                 "BIDAD","BINGK","BIRAI","BIRUH","BISON","BUTIH",
-                 "CABAI","CABUT","CAKRA","CANGK","DADAK","DAGUH"];
+        WORDS = lang.fallback;
     }
     document.getElementById('loading').style.display = 'none';
     newGame();
+}
+
+function cycleLang() {
+    const keys = Object.keys(LANGS);
+    const idx = keys.indexOf(currentLang);
+    currentLang = keys[(idx + 1) % keys.length];
+    document.getElementById('lang-btn').textContent = LANGS[currentLang].label;
+    updateUIText();
+    loadWords();
+}
+
+function updateUIText() {
+    document.getElementById('restart').innerHTML = '&#8635; ' + t().restart;
+    document.querySelector('#lb-modal h2').innerHTML = '&#127942; ' + t().leaderboard;
+    document.querySelector('#lb-modal .close-btn').textContent = t().close;
 }
 
 function newGame() {
@@ -297,7 +378,6 @@ function newGame() {
     row = 0;
     col = 0;
     gameOver = false;
-    usedLetters.clear();
     for (const k in keyHistory) delete keyHistory[k];
 
     tiles.forEach(t => {
@@ -336,7 +416,7 @@ keyboard.addEventListener('click', (e) => {
     if (btn.dataset.action === 'back') { removeLetter(); return; }
 
     const letter = btn.textContent;
-    if (letter.length === 1 && !usedLetters.has(letter)) {
+    if (letter.length === 1) {
         placeLetter(letter);
     }
 });
@@ -427,7 +507,7 @@ function checkRow() {
     if (row >= ROWS) {
         gameOver = true;
         stopTimer();
-        setTimeout(() => alert('Kalah! Jawaban: ' + answer), 600);
+        setTimeout(() => alert(t().lose + answer), 600);
     }
 }
 
@@ -461,7 +541,6 @@ function updateKeyboard(guess) {
 
         if (state === 'gray') {
             btn.classList.add('used');
-            usedLetters.add(letter);
         }
     });
 }
@@ -472,46 +551,46 @@ async function getLeaderboard() {
     return res.json();
 }
 
-async function saveScore(name, guesses, time) {
+async function saveScore(name, guesses, time, lang) {
     const res = await fetch('/api/leaderboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, guesses, time })
+        body: JSON.stringify({ name, guesses, time, lang })
     });
     if (!res.ok) throw new Error('API error');
 }
 
 async function showLeaderboard() {
     const list = document.getElementById('lb-list');
-    list.innerHTML = '<p style="text-align:center;color:#818384;">Memuat...</p>';
+    list.innerHTML = '<p style="text-align:center;color:#818384;">...</p>';
     document.getElementById('lb-modal').style.display = 'flex';
 
     try {
         const lb = await getLeaderboard();
         if (lb.length === 0) {
-            list.innerHTML = '<p style="text-align:center;color:#818384;">Belum ada data.</p>';
+            list.innerHTML = '<p style="text-align:center;color:#818384;">' + t().noData + '</p>';
         } else {
             list.innerHTML = lb.map((e, i) =>
-                '<div class="lb-entry"><span>' + (i + 1) + '. ' + e[0] + '</span><span>' + e[1] + 'x &middot; ' + e[2] + 's</span></div>'
+                '<div class="lb-entry"><span>' + (i + 1) + '. ' + e[0] + ' [' + e[3] + ']</span><span>' + e[1] + 'x &middot; ' + e[2] + 's</span></div>'
             ).join('');
         }
     } catch (err) {
-        list.innerHTML = '<p style="text-align:center;color:#ff6b6b;">Server tidak tersedia. Coba lagi nanti.</p>';
+        list.innerHTML = '<p style="text-align:center;color:#ff6b6b;">' + t().serverError + '</p>';
     }
 }
 
 function askName() {
     if (seconds >= TIME_LIMIT) {
-        alert('Menang! (' + (row + 1) + 'x, ' + seconds + 's)\nTerlalu lambat untuk leaderboard.');
+        alert(t().win + ' (' + (row + 1) + 'x, ' + seconds + 's)\n' + t().tooSlow);
         return;
     }
-    const name = prompt('Nama untuk leaderboard:');
+    const name = prompt(t().namePrompt);
     if (!name || !name.trim()) return;
 
-    saveScore(name.trim(), row + 1, seconds).then(() => {
-        alert('Menang! (' + (row + 1) + 'x, ' + seconds + 's)\nTersimpan di leaderboard!');
+    saveScore(name.trim(), row + 1, seconds, currentLang).then(() => {
+        alert(t().win + ' (' + (row + 1) + 'x, ' + seconds + 's)\n' + t().saved);
     }).catch(() => {
-        alert('Menang! (' + (row + 1) + 'x, ' + seconds + 's)\nGagal simpan. Server mungkin down.');
+        alert(t().win + ' (' + (row + 1) + 'x, ' + seconds + 's)\n' + t().saveFail);
     });
 }
 
