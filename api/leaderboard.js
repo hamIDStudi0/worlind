@@ -16,9 +16,9 @@ export default async function handler(req, res) {
                     params: []
                 }])
             }).then(r => r.json());
-            res.json(data[0].columns || []);
+            return res.json(data[0].columns || []);
         } catch (err) {
-            res.status(500).json({ error: 'Database error' });
+            return res.status(500).json({ error: 'Database error' });
         }
     }
 
@@ -45,11 +45,11 @@ export default async function handler(req, res) {
                     params: [name, guesses, time]
                 }])
             });
-            res.json({ ok: true });
+            return res.json({ ok: true });
         } catch (err) {
-            res.status(500).json({ error: 'Database error' });
+            return res.status(500).json({ error: 'Database error' });
         }
     }
 
-    res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
 }   
