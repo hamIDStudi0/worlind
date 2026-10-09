@@ -12,7 +12,7 @@ export default async function handler(req, res) {
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
                 body: JSON.stringify([{
-                    sql: 'SELECT name, guesses, time, lang FROM leaderboard ORDER BY guesses ASC, time ASC',
+                    sql: 'SELECT name, guesses, time, lang FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 100',
                     params: []
                 }])
             }).then(r => r.json());
@@ -40,20 +40,24 @@ export default async function handler(req, res) {
         if (!['id', 'en'].includes(lang)) {
             return res.status(400).json({ error: 'Invalid lang' });
         }
+
         try {
+            const body = JSON.stringify([
+                { sql: 'INSERT INTO leaderboard (name, guesses, time, lang) VALUES (?, ?, ?, ?)', params: [name, guesses, time, lang] },
+                { sql: "DELETE FROM leaderboard WHERE id NOT IN (SELECT id FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 100)", params: [] }
+            ]);
+
             await fetch(TURSO_URL + '/v0/sql', {
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
-                body: JSON.stringify([{
-                    sql: 'INSERT INTO leaderboard (name, guesses, time, lang) VALUES (?, ?, ?, ?)',
-                    params: [name, guesses, time, lang]
-                }])
+                body: body
             });
+
             return res.json({ ok: true });
         } catch (err) {
             return res.status(500).json({ error: 'Database error: ' + err.message });
         }
-    }
+    }   
 
     return res.status(405).json({ error: 'Method not allowed' });
 }   

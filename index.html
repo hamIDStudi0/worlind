@@ -273,7 +273,6 @@
 const ROWS = 5;
 const COLS = 5;
 const TOTAL_TILES = ROWS * COLS;
-const TIME_LIMIT = 100;
 const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 const LANGS = {
@@ -580,10 +579,6 @@ async function showLeaderboard() {
 }
 
 function askName() {
-    if (seconds >= TIME_LIMIT) {
-        alert(t().win + ' (' + (row + 1) + 'x, ' + seconds + 's)\n' + t().tooSlow);
-        return;
-    }
     const name = prompt(t().namePrompt);
     if (!name || !name.trim()) return;
 
@@ -592,7 +587,7 @@ function askName() {
     }).catch(() => {
         alert(t().win + ' (' + (row + 1) + 'x, ' + seconds + 's)\n' + t().saveFail);
     });
-}
+}   
 
 loadWords();
 </script>
