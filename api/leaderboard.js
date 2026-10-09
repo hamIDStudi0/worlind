@@ -23,8 +23,13 @@ export default async function handler(req, res) {
             });
             const data = await res2.json();
             if (!res2.ok) return res.status(500).json({ error: 'Turso error: ' + JSON.stringify(data) });
-            if (!data.results || !data.results[0]) return res.json([]);
-            return res.json(data.results[0].rows || []);
+
+            const result = data.results[0];
+            if (!result || result.type !== 'ok') return res.json([]);
+
+            const rows = result.response.result.rows || [];
+            const parsed = rows.map(row => row.map(cell => cell.value !== undefined ? cell.value : cell));
+            return res.json(parsed);
         } catch (err) {
             return res.status(500).json({ error: 'Database error: ' + err.message });
         }
@@ -82,6 +87,10 @@ export default async function handler(req, res) {
             const data = await res2.json();
             if (!res2.ok) {
                 return res.status(500).json({ error: 'Turso error: ' + JSON.stringify(data) });
+            }
+            const result = data.results[0];
+            if (result && result.type === 'error') {
+                return res.status(500).json({ error: 'SQL error: ' + result.error.message });
             }
             return res.json({ ok: true });
         } catch (err) {
