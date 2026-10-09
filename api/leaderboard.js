@@ -6,21 +6,26 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Server misconfigured' });
     }
 
-    if (req.method === 'GET') {
-        try {
-            const data = await fetch(TURSO_URL + '/v0/sql', {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
-                body: JSON.stringify([{
-                    sql: 'SELECT name, guesses, time FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 50',
-                    params: []
-                }])
-            }).then(r => r.json());
-            return res.json(data[0].columns || []);
-        } catch (err) {
-            return res.status(500).json({ error: 'Database error' });
+   if (req.method === 'GET') {
+    try {
+        const res2 = await fetch(TURSO_URL + '/v0/sql', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
+            body: JSON.stringify([{
+                sql: 'SELECT name, guesses, time FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 50',
+                params: []
+            }])
+        });
+        const data = await res2.json();
+
+        if (!Array.isArray(data) || !data[0]) {
+            return res.json([]);
         }
+        return res.json(data[0].columns || []);
+    } catch (err) {
+        return res.status(500).json({ error: 'Database error: ' + err.message });
     }
+    }   
 
     if (req.method === 'POST') {
         const { name, guesses, time } = req.body;
