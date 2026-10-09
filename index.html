@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Wordle ID</title>
+</head>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        overflow: hidden;
+        background: #121213;
+        color: white;
+        font-family: sans-serif;
+        position: relative;
+    }
+
+    #timer {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 1rem;
+        font-weight: 600;
+        color: #818384;
+        font-variant-numeric: tabular-nums;
+    }
+
+    #leaderboard-btn {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: none;
+        border: 2px solid #565758;
+        border-radius: 4px;
+        color: white;
+        font-size: 0.9rem;
+        font-weight: 700;
+        padding: 6px 10px;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    #leaderboard-btn:active { background: #3a3a3c; }
+
+    #restart {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: none;
+        border: 2px solid #565758;
+        border-radius: 4px;
+        color: white;
+        font-size: 0.9rem;
+        padding: 6px 12px;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    #restart:active { background: #3a3a3c; }
+
+    .board {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+
+    #grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4px;
+        width: 100%;
+        max-width: 280px;
+        aspect-ratio: 1;
+    }
+
+    .tile {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #3a3a3c;
+        border-radius: 4px;
+        font-size: clamp(1.2rem, 8vw, 2rem);
+        font-weight: 700;
+        text-transform: uppercase;
+        transition: background 0.3s;
+    }
+
+    .tile.filled {
+        border-color: #565758;
+        animation: pop 0.1s;
+    }
+
+    .tile.green  { background: #538d4e; border-color: #538d4e; }
+    .tile.yellow { background: #b59f3b; border-color: #b59f3b; }
+    .tile.gray   { background: #3a3a3c; border-color: #3a3a3c; }
+
+    @keyframes pop {
+        0% { transform: scale(0.9); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+
+    .tile.shake { animation: shake 0.3s; }
+
+    #keyboard {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 8px;
+        padding-bottom: env(safe-area-inset-bottom, 8px);
+        flex-shrink: 0;
+    }
+
+    .row {
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+    }
+
+    .row button {
+        flex: 1;
+        min-height: 48px;
+        border: none;
+        border-radius: 4px;
+        background: #d6d4d0;
+        color: #121213;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        transition: opacity 0.3s, background 0.3s;
+    }
+
+    .row button:active { background: #b0aea9; }
+    .row button[data-action] { flex: 1.5; font-size: 0.7rem; }
+    .row button.used { display: none; }
+    .row button.green  { background: #538d4e; color: white; }
+    .row button.yellow { background: #b59f3b; color: white; }
+    .row button.gray   { background: #3a3a3c; color: white; }
+
+    #loading {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #121213;
+        z-index: 99;
+        font-size: 1.2rem;
+    }
+
+    #lb-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #lb-modal .content {
+        background: #1e1e1e;
+        border-radius: 8px;
+        padding: 20px;
+        max-width: 320px;
+        width: 90%;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    #lb-modal h2 { margin-bottom: 12px; text-align: center; }
+
+    #lb-modal .lb-entry {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px solid #333;
+    }
+
+    #lb-modal .close-btn {
+        margin-top: 12px;
+        width: 100%;
+        padding: 10px;
+        background: #d6d4d0;
+        border: none;
+        border-radius: 4px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+</style>
+<body>
+
+    <div id="loading">Memuat kata...</div>
+
+    <div id="timer">00:00</div>
+    <button id="leaderboard-btn" onclick="showLeaderboard()">H</button>
+    <button id="restart" onclick="newGame(); this.blur()">&#8635; Restart</button>
+
+    <div class="board">
+        <div id="grid"></div>
+    </div>
+
+    <div id="keyboard">
+        <div class="row">
+            <button>Q</button><button>W</button><button>E</button>
+            <button>R</button><button>T</button><button>Y</button>
+            <button>U</button><button>I</button><button>O</button>
+            <button>P</button>
+        </div>
+        <div class="row">
+            <button>A</button><button>S</button><button>D</button>
+            <button>F</button><button>G</button><button>H</button>
+            <button>J</button><button>K</button><button>L</button>
+        </div>
+        <div class="row">
+            <button data-action="enter">ENTER</button>
+            <button>Z</button><button>X</button><button>C</button>
+            <button>V</button><button>B</button><button>N</button>
+            <button>M</button>
+            <button data-action="back">&#9003;</button>
+        </div>
+    </div>
+
+    <div id="lb-modal">
+        <div class="content">
+            <h2>&#127942; Leaderboard</h2>
+            <div id="lb-list"><p style="text-align:center;color:#818384;">Memuat...</p></div>
+            <button class="close-btn" onclick="document.getElementById('lb-modal').style.display='none'">Tutup</button>
+        </div>
+    </div>
+
+<script>
+const ROWS = 5;
+const COLS = 5;
+const TOTAL_TILES = ROWS * COLS;
+const TIME_LIMIT = 100;
+const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+const TURSO_URL = "libsql://wordle-hamidstudi0.aws-ap-northeast-1.turso.io";
+const TURSO_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTE1NTY4MjMsImlkIjoiMDFhMTIxMDktOTIwMS03MThmLThiZjgtODQzZjQ2ZTFmZDM3Iiwia2lkIjoiRmZuSXlIb293R1pYRlhGc21TNGoyUHZpakNsNTVCcldMQk1DeHVoekRMdyIsInJpZCI6IjcwNWZlNjA2LThhYWUtNGM2MC05YTAzLWIwZmFjN2YwNTlmYyJ9.rT0Ap0pkJx1XYj38hhjGFmsBFiz5c6rFpHboRnsaZpFh4nPoU1ZI2LUMJyK5hkiyJLk2ozXGfb6dynIHcv2wCw";
+
+let WORDS = [];
+let answer = "";
+let row = 0;
+let col = 0;
+let gameOver = false;
+const usedLetters = new Set();
+const keyHistory = {};
+
+let timerInterval = null;
+let seconds = 0;
+
+const grid = document.getElementById('grid');
+const keyboard = document.getElementById('keyboard');
+const tiles = [];
+
+for (let i = 0; i < TOTAL_TILES; i++) {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    grid.appendChild(tile);
+    tiles.push(tile);
+}
+
+async function tursoQuery(sql, params) {
+    const res = await fetch(TURSO_URL + '/v0/sql', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
+        body: JSON.stringify([{ sql, params }])
+    });
+    if (!res.ok) throw new Error('Turso error: ' + res.status);
+    return res.json();
+}
+
+async function loadWords() {
+    try {
+        const res = await fetch('https://raw.githubusercontent.com/thinsmn/wordlist-id/main/wordlist-id.txt');
+        const text = await res.text();
+        WORDS = text.split('\n')
+            .map(w => w.trim().toUpperCase())
+            .filter(w => w.length === COLS && /^[A-Z]+$/.test(w));
+    } catch (err) {
+        WORDS = ["RUMAH","KURSI","HUJAN","TIDUR","TEMAN","CINTA",
+                 "PUTIH","PINTU","BUNGA","BANGU","SEKOL","KERJA",
+                 "MAKAN","MINUM","BAGAI","BANYK","BESAR","BICAR",
+                 "BIDAD","BINGK","BIRAI","BIRUH","BISON","BUTIH",
+                 "CABAI","CABUT","CAKRA","CANGK","DADAK","DAGUH"];
+    }
+    document.getElementById('loading').style.display = 'none';
+    newGame();
+}
+
+function newGame() {
+    answer = WORDS[Math.floor(Math.random() * WORDS.length)];
+    row = 0;
+    col = 0;
+    gameOver = false;
+    usedLetters.clear();
+    for (const k in keyHistory) delete keyHistory[k];
+
+    tiles.forEach(t => {
+        t.className = 'tile';
+        t.textContent = '';
+    });
+
+    document.querySelectorAll('#keyboard button').forEach(btn => {
+        btn.className = '';
+    });
+
+    startTimer();
+}
+
+function startTimer() {
+    clearInterval(timerInterval);
+    seconds = 0;
+    document.getElementById('timer').textContent = '00:00';
+    timerInterval = setInterval(() => {
+        seconds++;
+        const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const s = String(seconds % 60).padStart(2, '0');
+        document.getElementById('timer').textContent = m + ':' + s;
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(timerInterval);
+}
+
+keyboard.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn || btn.classList.contains('used')) return;
+
+    if (btn.dataset.action === 'enter') { checkRow(); return; }
+    if (btn.dataset.action === 'back') { removeLetter(); return; }
+
+    const letter = btn.textContent;
+    if (letter.length === 1 && !usedLetters.has(letter)) {
+        placeLetter(letter);
+    }
+});
+
+if (!IS_MOBILE) {
+    document.addEventListener('keydown', (e) => {
+        if (gameOver) return;
+        if (e.key >= 'a' && e.key <= 'z') placeLetter(e.key.toUpperCase());
+        else if (e.key === 'Enter') {
+            e.preventDefault();
+            checkRow();
+        }
+        else if (e.key === 'Backspace') removeLetter();
+    });
+}
+
+function placeLetter(letter) {
+    if (col >= COLS || gameOver) return;
+    const tile = tiles[row * COLS + col];
+    tile.textContent = letter;
+    tile.classList.add('filled');
+    col++;
+}
+
+function removeLetter() {
+    if (col === 0 || gameOver) return;
+    col--;
+    const tile = tiles[row * COLS + col];
+    tile.textContent = '';
+    tile.classList.remove('filled');
+}
+
+function checkRow() {
+    if (col < COLS || gameOver) {
+        tiles.slice(row * COLS, row * COLS + COLS).forEach(t => {
+            t.classList.add('shake');
+            setTimeout(() => t.classList.remove('shake'), 300);
+        });
+        return;
+    }
+
+    const guess = tiles.slice(row * COLS, row * COLS + COLS)
+        .map(t => t.textContent).join('');
+
+    const result = [];
+    const remaining = {};
+
+    for (let i = 0; i < COLS; i++) {
+        if (guess[i] === answer[i]) {
+            result[i] = 'green';
+        } else {
+            result[i] = null;
+        }
+    }
+
+    for (let i = 0; i < COLS; i++) {
+        if (result[i] !== 'green') {
+            remaining[answer[i]] = (remaining[answer[i]] || 0) + 1;
+        }
+    }
+
+    for (let i = 0; i < COLS; i++) {
+        if (result[i] === 'green') continue;
+        if (remaining[guess[i]] > 0) {
+            result[i] = 'yellow';
+            remaining[guess[i]]--;
+        } else {
+            result[i] = 'gray';
+        }
+    }
+
+    for (let i = 0; i < COLS; i++) {
+        tiles[row * COLS + i].classList.add(result[i]);
+    }
+
+    updateKeyboard(guess);
+
+    if (guess === answer) {
+        gameOver = true;
+        stopTimer();
+        setTimeout(() => askName(), 600);
+        return;
+    }
+
+    row++;
+    col = 0;
+
+    if (row >= ROWS) {
+        gameOver = true;
+        stopTimer();
+        setTimeout(() => alert('Kalah! Jawaban: ' + answer), 600);
+    }
+}
+
+function updateKeyboard(guess) {
+    const rank = { gray: 0, yellow: 1, green: 2 };
+
+    for (let i = 0; i < COLS; i++) {
+        const letter = guess[i];
+        const tile = tiles[row * COLS + i];
+        let state;
+
+        if (tile.classList.contains('green')) state = 'green';
+        else if (tile.classList.contains('yellow')) state = 'yellow';
+        else state = 'gray';
+
+        if (!keyHistory[letter] || rank[state] > rank[keyHistory[letter]]) {
+            keyHistory[letter] = state;
+        }
+    }
+
+    document.querySelectorAll('#keyboard button').forEach(btn => {
+        const letter = btn.textContent;
+        if (letter.length !== 1) return;
+
+        btn.classList.remove('green', 'yellow', 'gray', 'used');
+
+        const state = keyHistory[letter];
+        if (!state) return;
+
+        btn.classList.add(state);
+
+        if (state === 'gray') {
+            btn.classList.add('used');
+            usedLetters.add(letter);
+        }
+    });
+}
+
+async function saveScore(name, guesses, time) {
+    await tursoQuery(
+        'INSERT INTO leaderboard (name, guesses, time) VALUES (?, ?, ?)',
+        [name, guesses, time]
+    );
+}
+
+async function getLeaderboard() {
+    const data = await tursoQuery(
+        'SELECT name, guesses, time FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 50',
+        []
+    );
+    if (!data[0] || !data[0].columns || data[0].columns.length === 0) return [];
+    return data[0].columns;
+}
+
+async function showLeaderboard() {
+    const list = document.getElementById('lb-list');
+    list.innerHTML = '<p style="text-align:center;color:#818384;">Memuat...</p>';
+    document.getElementById('lb-modal').style.display = 'flex';
+
+    try {
+        const lb = await getLeaderboard();
+        if (lb.length === 0) {
+            list.innerHTML = '<p style="text-align:center;color:#818384;">Belum ada data.</p>';
+        } else {
+            list.innerHTML = lb.map((e, i) =>
+                '<div class="lb-entry"><span>' + (i + 1) + '. ' + e[0] + '</span><span>' + e[1] + 'x &middot; ' + e[2] + 's</span></div>'
+            ).join('');
+        }
+    } catch (err) {
+        list.innerHTML = '<p style="text-align:center;color:#ff6b6b;">Server tidak tersedia. Coba lagi nanti.</p>';
+    }
+}
+
+function askName() {
+    if (seconds >= TIME_LIMIT) {
+        alert('Menang! (' + (row + 1) + 'x, ' + seconds + 's)\nTerlalu lambat untuk leaderboard.');
+        return;
+    }
+    const name = prompt('Nama untuk leaderboard:');
+    if (!name || !name.trim()) return;
+
+    saveScore(name.trim(), row + 1, seconds).then(() => {
+        alert('Menang! (' + (row + 1) + 'x, ' + seconds + 's)\nTersimpan di leaderboard!');
+    }).catch(() => {
+        alert('Menang! (' + (row + 1) + 'x, ' + seconds + 's)\nGagal simpan. Server mungkin down.');
+    });
+}
+
+loadWords();
+</script>
+</body>
+</html>
