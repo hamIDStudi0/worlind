@@ -12,7 +12,7 @@ export default async function handler(req, res) {
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
                 body: JSON.stringify([{
-                    sql: 'SELECT name, guesses, time, lang FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 50',
+                    sql: 'SELECT name, guesses, time, lang FROM leaderboard ORDER BY guesses ASC, time ASC',
                     params: []
                 }])
             }).then(r => r.json());
