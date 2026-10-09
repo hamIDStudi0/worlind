@@ -252,9 +252,6 @@ const TOTAL_TILES = ROWS * COLS;
 const TIME_LIMIT = 100;
 const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-const TURSO_URL = "libsql://wordle-hamidstudi0.aws-ap-northeast-1.turso.io";
-const TURSO_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTE1NTY4MjMsImlkIjoiMDFhMTIxMDktOTIwMS03MThmLThiZjgtODQzZjQ2ZTFmZDM3Iiwia2lkIjoiRmZuSXlIb293R1pYRlhGc21TNGoyUHZpakNsNTVCcldMQk1DeHVoekRMdyIsInJpZCI6IjcwNWZlNjA2LThhYWUtNGM2MC05YTAzLWIwZmFjN2YwNTlmYyJ9.rT0Ap0pkJx1XYj38hhjGFmsBFiz5c6rFpHboRnsaZpFh4nPoU1ZI2LUMJyK5hkiyJLk2ozXGfb6dynIHcv2wCw";
-
 let WORDS = [];
 let answer = "";
 let row = 0;
@@ -275,16 +272,6 @@ for (let i = 0; i < TOTAL_TILES; i++) {
     tile.className = 'tile';
     grid.appendChild(tile);
     tiles.push(tile);
-}
-
-async function tursoQuery(sql, params) {
-    const res = await fetch(TURSO_URL + '/v0/sql', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
-        body: JSON.stringify([{ sql, params }])
-    });
-    if (!res.ok) throw new Error('Turso error: ' + res.status);
-    return res.json();
 }
 
 async function loadWords() {
@@ -479,20 +466,19 @@ function updateKeyboard(guess) {
     });
 }
 
-async function saveScore(name, guesses, time) {
-    await tursoQuery(
-        'INSERT INTO leaderboard (name, guesses, time) VALUES (?, ?, ?)',
-        [name, guesses, time]
-    );
+async function getLeaderboard() {
+    const res = await fetch('/api/leaderboard');
+    if (!res.ok) throw new Error('API error');
+    return res.json();
 }
 
-async function getLeaderboard() {
-    const data = await tursoQuery(
-        'SELECT name, guesses, time FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 50',
-        []
-    );
-    if (!data[0] || !data[0].columns || data[0].columns.length === 0) return [];
-    return data[0].columns;
+async function saveScore(name, guesses, time) {
+    const res = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, guesses, time })
+    });
+    if (!res.ok) throw new Error('API error');
 }
 
 async function showLeaderboard() {
@@ -532,4 +518,4 @@ function askName() {
 loadWords();
 </script>
 </body>
-</html>
+</html>   
