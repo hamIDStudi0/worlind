@@ -556,8 +556,9 @@ async function saveScore(name, guesses, time, lang) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, guesses, time, lang })
     });
-    if (!res.ok) throw new Error('API error');
-}
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'API error');
+}   
 
 async function showLeaderboard() {
     const list = document.getElementById('lb-list');
@@ -584,10 +585,10 @@ function askName() {
 
     saveScore(name.trim(), row + 1, seconds, currentLang).then(() => {
         alert(t().win + ' (' + (row + 1) + 'x, ' + seconds + 's)\n' + t().saved);
-    }).catch(() => {
-        alert(t().win + ' (' + (row + 1) + 'x, ' + seconds + 's)\n' + t().saveFail);
-    });
-}   
+    }).catch((err) => {
+        alert(t().win + ' (' + (row + 1) + 'x, ' + seconds + 's)\n' + err.message);
+    });   
+}
 
 loadWords();
 </script>
