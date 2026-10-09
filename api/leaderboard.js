@@ -47,11 +47,17 @@ export default async function handler(req, res) {
                 { sql: "DELETE FROM leaderboard WHERE id NOT IN (SELECT id FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 100)", params: [] }
             ]);
 
-            await fetch(TURSO_URL + '/v0/sql', {
+            const res2 = await fetch(TURSO_URL + '/v0/sql', {
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
                 body: body
             });
+
+            const data = await res2.json();
+
+            if (!res2.ok) {
+                return res.status(500).json({ error: 'Turso error: ' + JSON.stringify(data) });
+            }
 
             return res.json({ ok: true });
         } catch (err) {
