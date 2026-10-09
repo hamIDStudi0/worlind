@@ -23,7 +23,8 @@ export default async function handler(req, res) {
             });
             const data = await res2.json();
             if (!res2.ok) return res.status(500).json({ error: 'Turso error: ' + JSON.stringify(data) });
-            return res.json(data.results[0].columns || []);
+            if (!data.results || !data.results[0]) return res.json([]);
+            return res.json(data.results[0].rows || []);
         } catch (err) {
             return res.status(500).json({ error: 'Database error: ' + err.message });
         }
@@ -56,8 +57,24 @@ export default async function handler(req, res) {
                 },
                 body: JSON.stringify({
                     requests: [
-                        { type: 'execute', stmt: { sql: 'INSERT INTO leaderboard (name, guesses, time, lang) VALUES (?, ?, ?, ?)', args: [name, guesses, time, lang] } },
-                        { type: 'execute', stmt: { sql: "DELETE FROM leaderboard WHERE id NOT IN (SELECT id FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 100)" } },
+                        {
+                            type: 'execute',
+                            stmt: {
+                                sql: 'INSERT INTO leaderboard (name, guesses, time, lang) VALUES (?, ?, ?, ?)',
+                                args: [
+                                    { type: 'text', value: name },
+                                    { type: 'integer', value: String(guesses) },
+                                    { type: 'integer', value: String(time) },
+                                    { type: 'text', value: lang }
+                                ]
+                            }
+                        },
+                        {
+                            type: 'execute',
+                            stmt: {
+                                sql: "DELETE FROM leaderboard WHERE id NOT IN (SELECT id FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 100)"
+                            }
+                        },
                         { type: 'close' }
                     ]
                 })
