@@ -8,16 +8,22 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
         try {
-            const data = await fetch(TURSO_URL + '/v0/sql', {
+            const res2 = await fetch(TURSO_URL + '/v2/pipeline', {
                 method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
-                body: JSON.stringify([{
-                    sql: 'SELECT name, guesses, time, lang FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 100',
-                    params: []
-                }])
-            }).then(r => r.json());
-            if (!Array.isArray(data) || !data[0]) return res.json([]);
-            return res.json(data[0].columns || []);
+                headers: {
+                    'Authorization': 'Bearer ' + TURSO_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    requests: [
+                        { type: 'execute', stmt: { sql: 'SELECT name, guesses, time, lang FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 100' } },
+                        { type: 'close' }
+                    ]
+                })
+            });
+            const data = await res2.json();
+            if (!res2.ok) return res.status(500).json({ error: 'Turso error: ' + JSON.stringify(data) });
+            return res.json(data.results[0].columns || []);
         } catch (err) {
             return res.status(500).json({ error: 'Database error: ' + err.message });
         }
@@ -42,28 +48,29 @@ export default async function handler(req, res) {
         }
 
         try {
-            const body = JSON.stringify([
-                { sql: 'INSERT INTO leaderboard (name, guesses, time, lang) VALUES (?, ?, ?, ?)', params: [name, guesses, time, lang] },
-                { sql: "DELETE FROM leaderboard WHERE id NOT IN (SELECT id FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 100)", params: [] }
-            ]);
-
-            const res2 = await fetch(TURSO_URL + '/v0/sql', {
+            const res2 = await fetch(TURSO_URL + '/v2/pipeline', {
                 method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + TURSO_TOKEN },
-                body: body
+                headers: {
+                    'Authorization': 'Bearer ' + TURSO_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    requests: [
+                        { type: 'execute', stmt: { sql: 'INSERT INTO leaderboard (name, guesses, time, lang) VALUES (?, ?, ?, ?)', args: [name, guesses, time, lang] } },
+                        { type: 'execute', stmt: { sql: "DELETE FROM leaderboard WHERE id NOT IN (SELECT id FROM leaderboard ORDER BY guesses ASC, time ASC LIMIT 100)" } },
+                        { type: 'close' }
+                    ]
+                })
             });
-
             const data = await res2.json();
-
             if (!res2.ok) {
                 return res.status(500).json({ error: 'Turso error: ' + JSON.stringify(data) });
             }
-
             return res.json({ ok: true });
         } catch (err) {
             return res.status(500).json({ error: 'Database error: ' + err.message });
         }
-    }   
+    }
 
     return res.status(405).json({ error: 'Method not allowed' });
 }   
