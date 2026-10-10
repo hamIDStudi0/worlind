@@ -28,7 +28,7 @@ export default async function handler(req, res) {
             if (!result || result.type !== 'ok') return res.json([]);
 
             const rows = result.response.result.rows || [];
-            const parsed = rows.map(row => row.map(cell => cell.value !== undefined ? cell.value : cell));
+            const parsed = rows.map(r => r.map(cell => cell.value !== undefined ? cell.value : cell));
             return res.json(parsed);
         } catch (err) {
             return res.status(500).json({ error: 'Database error: ' + err.message });

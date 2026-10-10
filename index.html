@@ -19,6 +19,73 @@
         position: relative;
     }
 
+    #start-screen {
+        position: fixed;
+        inset: 0;
+        background: #121213;
+        z-index: 200;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+    }
+
+    #start-screen .logo {
+        width: 120px;
+        height: auto;
+    }
+
+    #start-screen .title {
+        font-size: 2.5rem;
+        font-weight: 900;
+        letter-spacing: 8px;
+        color: #538d4e;
+    }
+
+    #start-screen .subtitle {
+        font-size: 0.9rem;
+        color: #818384;
+        margin-top: -16px;
+    }
+
+    #start-screen .btn-play {
+        margin-top: 16px;
+        padding: 14px 48px;
+        background: #538d4e;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+        touch-action: manipulation;
+        transition: background 0.2s;
+    }
+
+    #start-screen .btn-play:active { background: #3a6b35; }
+
+    #start-screen .btn-lang {
+        margin-top: 8px;
+        padding: 10px 24px;
+        background: none;
+        border: 2px solid #565758;
+        border-radius: 6px;
+        color: #818384;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+
+    #start-screen .btn-lang:active { background: #3a3a3c; }
+
+    #game-screen {
+        display: none;
+        flex-direction: column;
+        height: 100dvh;
+    }
+
     #timer {
         position: absolute;
         top: 12px;
@@ -176,17 +243,6 @@
     .row button.yellow { background: #b59f3b; color: white; }
     .row button.gray   { background: #3a3a3c; color: white; }
 
-    #loading {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #121213;
-        z-index: 99;
-        font-size: 1.2rem;
-    }
-
     #lb-modal {
         display: none;
         position: fixed;
@@ -229,38 +285,66 @@
 </style>
 <body>
 
-    <div id="loading">Memuat kata...</div>
-
-    <div id="timer">00:00</div>
-    <button id="leaderboard-btn" onclick="showLeaderboard()">H</button>
-    <button id="lang-btn" onclick="cycleLang()">ID</button>
-    <button id="restart" onclick="newGame(); this.blur()">&#8635; Restart</button>
-
-    <div class="board">
-        <div id="grid"></div>
+    <!-- START SCREEN -->
+    <div id="start-screen">
+        <svg class="logo" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="10" width="20" height="20" rx="3" fill="#538d4e"/>
+            <rect x="33" y="10" width="20" height="20" rx="3" fill="#b59f3b"/>
+            <rect x="56" y="10" width="20" height="20" rx="3" fill="#3a3a3c"/>
+            <rect x="79" y="10" width="20" height="20" rx="3" fill="#538d4e"/>
+            <rect x="10" y="33" width="20" height="20" rx="3" fill="#b59f3b"/>
+            <rect x="33" y="33" width="20" height="20" rx="3" fill="#538d4e"/>
+            <rect x="56" y="33" width="20" height="20" rx="3" fill="#538d4e"/>
+            <rect x="79" y="33" width="20" height="20" rx="3" fill="#b59f3b"/>
+            <rect x="10" y="56" width="20" height="20" rx="3" fill="#3a3a3c"/>
+            <rect x="33" y="56" width="20" height="20" rx="3" fill="#b59f3b"/>
+            <rect x="56" y="56" width="20" height="20" rx="3" fill="#538d4e"/>
+            <rect x="79" y="56" width="20" height="20" rx="3" fill="#538d4e"/>
+            <rect x="10" y="79" width="20" height="20" rx="3" fill="#538d4e"/>
+            <rect x="33" y="79" width="20" height="20" rx="3" fill="#538d4e"/>
+            <rect x="56" y="79" width="20" height="20" rx="3" fill="#b59f3b"/>
+            <rect x="79" y="79" width="20" height="20" rx="3" fill="#3a3a3c"/>
+        </svg>
+        <div class="title">WORDLE</div>
+        <div class="subtitle" id="start-subtitle">Tebak kata dalam 5 percobaan</div>
+        <button class="btn-play" id="btn-play" onclick="startGame()">Play</button>
+        <button class="btn-lang" id="btn-start-lang" onclick="cycleLang()">ID</button>
     </div>
 
-    <div id="keyboard">
-        <div class="row">
-            <button>Q</button><button>W</button><button>E</button>
-            <button>R</button><button>T</button><button>Y</button>
-            <button>U</button><button>I</button><button>O</button>
-            <button>P</button>
+    <!-- GAME SCREEN -->
+    <div id="game-screen">
+        <div id="timer">00:00</div>
+        <button id="leaderboard-btn" onclick="showLeaderboard()">H</button>
+        <button id="lang-btn" onclick="cycleLang()">ID</button>
+        <button id="restart" onclick="newGame(); this.blur()">&#8635; Restart</button>
+
+        <div class="board">
+            <div id="grid"></div>
         </div>
-        <div class="row">
-            <button>A</button><button>S</button><button>D</button>
-            <button>F</button><button>G</button><button>H</button>
-            <button>J</button><button>K</button><button>L</button>
-        </div>
-        <div class="row">
-            <button data-action="enter">ENTER</button>
-            <button>Z</button><button>X</button><button>C</button>
-            <button>V</button><button>B</button><button>N</button>
-            <button>M</button>
-            <button data-action="back">&#9003;</button>
+
+        <div id="keyboard">
+            <div class="row">
+                <button>Q</button><button>W</button><button>E</button>
+                <button>R</button><button>T</button><button>Y</button>
+                <button>U</button><button>I</button><button>O</button>
+                <button>P</button>
+            </div>
+            <div class="row">
+                <button>A</button><button>S</button><button>D</button>
+                <button>F</button><button>G</button><button>H</button>
+                <button>J</button><button>K</button><button>L</button>
+            </div>
+            <div class="row">
+                <button data-action="enter">ENTER</button>
+                <button>Z</button><button>X</button><button>C</button>
+                <button>V</button><button>B</button><button>N</button>
+                <button>M</button>
+                <button data-action="back">&#9003;</button>
+            </div>
         </div>
     </div>
 
+    <!-- LEADERBOARD MODAL -->
     <div id="lb-modal">
         <div class="content">
             <h2>&#127942; Leaderboard</h2>
@@ -279,39 +363,41 @@ const LANGS = {
     id: {
         label: "ID",
         wordlist: "https://raw.githubusercontent.com/thinsmn/wordlist-id/main/wordlist-id.txt",
-        fallback: ["KACAU"],
+        fallback: ["RUMAH","KURSI","HUJAN","TIDUR","TEMAN","CINTA","PUTIH","PINTU","BUNGA","BANGU","SEKOL","KERJA","MAKAN","MINUM","BAGAI","BANYK","BESAR","BICAR","BIDAD","BINGK"],
         t: {
-            loading: "Memuat kata...",
+            subtitle: "Tebak kata dalam 5 percobaan",
+            play: "Play",
             restart: "Restart",
             leaderboard: "Leaderboard",
             noData: "Belum ada data.",
             serverError: "Server tidak tersedia. Coba lagi nanti.",
-            win: "GILAK Sepuh Bahasa!",
-            lose: "Cupuu! Jawabannya ",
-            tooSlow: "Terlalu lambat untuk leaderboard.",
+            win: "Menang!",
+            lose: "Kalah! Jawaban: ",
             saved: "Tersimpan di leaderboard!",
             saveFail: "Gagal simpan. Server mungkin down.",
             namePrompt: "Nama untuk leaderboard:",
-            close: "Tutup"
+            close: "Tutup",
+            loading: "Memuat kata..."
         }
     },
     en: {
         label: "EN",
         wordlist: "https://raw.githubusercontent.com/tabatkins/wordle-list/main/words",
-        fallback: ["ERROR"],
+        fallback: ["HOUSE","CHAIR","RAIN","SLEEP","FRIEND","LOVE","WHITE","DOOR","FLOWE","BUILD","SCHOI","WORK","EAT","DRINK","BEAUT","MANY","BIG","TALK","ANGEL","RING"],
         t: {
-            loading: "Loading words...",
+            subtitle: "Guess the word in 5 tries",
+            play: "Play",
             restart: "Restart",
             leaderboard: "Leaderboard",
             noData: "No data yet.",
             serverError: "Server unavailable. Try again later.",
-            win: "Thats So Crazy!",
-            lose: "Noob! Answer: ",
-            tooSlow: "Too slow for leaderboard.",
+            win: "Win!",
+            lose: "Lose! Answer: ",
             saved: "Saved to leaderboard!",
             saveFail: "Failed to save. Server may be down.",
             namePrompt: "Name for leaderboard:",
-            close: "Close"
+            close: "Close",
+            loading: "Loading words..."
         }
     }
 };
@@ -326,6 +412,7 @@ const keyHistory = {};
 
 let timerInterval = null;
 let seconds = 0;
+let gameStarted = false;
 
 function t() { return LANGS[currentLang].t; }
 
@@ -340,10 +427,43 @@ for (let i = 0; i < TOTAL_TILES; i++) {
     tiles.push(tile);
 }
 
+function startGame() {
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'flex';
+    if (!gameStarted) {
+        gameStarted = true;
+        loadWords();
+    }
+}
+
+function cycleLang() {
+    const keys = Object.keys(LANGS);
+    const idx = keys.indexOf(currentLang);
+    currentLang = keys[(idx + 1) % keys.length];
+    document.getElementById('btn-start-lang').textContent = LANGS[currentLang].label;
+    document.getElementById('lang-btn').textContent = LANGS[currentLang].label;
+    updateUIText();
+    if (gameStarted) loadWords();
+}
+
+function updateUIText() {
+    document.getElementById('start-subtitle').textContent = t().subtitle;
+    document.getElementById('btn-play').textContent = t().play;
+    document.getElementById('restart').innerHTML = '&#8635; ' + t().restart;
+    document.querySelector('#lb-modal h2').innerHTML = '&#127942; ' + t().leaderboard;
+    document.querySelector('#lb-modal .close-btn').textContent = t().close;
+}
+
 async function loadWords() {
     const lang = LANGS[currentLang];
-    document.getElementById('loading').style.display = 'flex';
-    document.getElementById('loading').textContent = lang.t.loading;
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'flex';
+    const loading = document.createElement('div');
+    loading.id = 'loading';
+    loading.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#121213;z-index:99;font-size:1.2rem;';
+    loading.textContent = lang.t.loading;
+    document.body.appendChild(loading);
+
     try {
         const res = await fetch(lang.wordlist);
         const text = await res.text();
@@ -353,23 +473,8 @@ async function loadWords() {
     } catch (err) {
         WORDS = lang.fallback;
     }
-    document.getElementById('loading').style.display = 'none';
+    loading.remove();
     newGame();
-}
-
-function cycleLang() {
-    const keys = Object.keys(LANGS);
-    const idx = keys.indexOf(currentLang);
-    currentLang = keys[(idx + 1) % keys.length];
-    document.getElementById('lang-btn').textContent = LANGS[currentLang].label;
-    updateUIText();
-    loadWords();
-}
-
-function updateUIText() {
-    document.getElementById('restart').innerHTML = '&#8635; ' + t().restart;
-    document.querySelector('#lb-modal h2').innerHTML = '&#127942; ' + t().leaderboard;
-    document.querySelector('#lb-modal .close-btn').textContent = t().close;
 }
 
 function newGame() {
@@ -379,9 +484,9 @@ function newGame() {
     gameOver = false;
     for (const k in keyHistory) delete keyHistory[k];
 
-    tiles.forEach(t => {
-        t.className = 'tile';
-        t.textContent = '';
+    tiles.forEach(el => {
+        el.className = 'tile';
+        el.textContent = '';
     });
 
     document.querySelectorAll('#keyboard button').forEach(btn => {
@@ -422,7 +527,7 @@ keyboard.addEventListener('click', (e) => {
 
 if (!IS_MOBILE) {
     document.addEventListener('keydown', (e) => {
-        if (gameOver) return;
+        if (gameOver || !gameStarted) return;
         if (e.key >= 'a' && e.key <= 'z') placeLetter(e.key.toUpperCase());
         else if (e.key === 'Enter') {
             e.preventDefault();
@@ -450,15 +555,15 @@ function removeLetter() {
 
 function checkRow() {
     if (col < COLS || gameOver) {
-        tiles.slice(row * COLS, row * COLS + COLS).forEach(t => {
-            t.classList.add('shake');
-            setTimeout(() => t.classList.remove('shake'), 300);
+        tiles.slice(row * COLS, row * COLS + COLS).forEach(el => {
+            el.classList.add('shake');
+            setTimeout(() => el.classList.remove('shake'), 300);
         });
         return;
     }
 
     const guess = tiles.slice(row * COLS, row * COLS + COLS)
-        .map(t => t.textContent).join('');
+        .map(el => el.textContent).join('');
 
     const result = [];
     const remaining = {};
@@ -558,7 +663,7 @@ async function saveScore(name, guesses, time, lang) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'API error');
-}   
+}
 
 async function showLeaderboard() {
     const list = document.getElementById('lb-list');
@@ -587,10 +692,10 @@ function askName() {
         alert(t().win + ' (' + (row + 1) + 'x, ' + seconds + 's)\n' + t().saved);
     }).catch((err) => {
         alert(t().win + ' (' + (row + 1) + 'x, ' + seconds + 's)\n' + err.message);
-    });   
+    });
 }
 
-loadWords();
+updateUIText();
 </script>
 </body>
 </html>   
