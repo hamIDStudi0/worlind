@@ -306,7 +306,7 @@
             <rect x="79" y="79" width="20" height="20" rx="3" fill="#3a3a3c"/>
         </svg>
         <div class="title">WORDLE</div>
-        <div class="subtitle" id="start-subtitle">Tebak kata dalam 5 percobaan</div>
+        <div class="subtitle" id="start-subtitle"></div>
         <button class="btn-play" id="btn-play" onclick="startGame()">Play</button>
         <button class="btn-lang" id="btn-start-lang" onclick="cycleLang()">ID</button>
     </div>
@@ -363,16 +363,16 @@ const LANGS = {
     id: {
         label: "ID",
         wordlist: "https://raw.githubusercontent.com/thinsmn/wordlist-id/main/wordlist-id.txt",
-        fallback: ["RUMAH","KURSI","HUJAN","TIDUR","TEMAN","CINTA","PUTIH","PINTU","BUNGA","BANGU","SEKOL","KERJA","MAKAN","MINUM","BAGAI","BANYK","BESAR","BICAR","BIDAD","BINGK"],
+        fallback: ["KACAU"],
         t: {
-            subtitle: "Tebak kata dalam 5 percobaan",
+            subtitle: "Worlind :)",
             play: "Play",
             restart: "Restart",
             leaderboard: "Leaderboard",
             noData: "Belum ada data.",
             serverError: "Server tidak tersedia. Coba lagi nanti.",
             win: "Menang!",
-            lose: "Kalah! Jawaban: ",
+            lose: "Kalah! Jawabannya ",
             saved: "Tersimpan di leaderboard!",
             saveFail: "Gagal simpan. Server mungkin down.",
             namePrompt: "Nama untuk leaderboard:",
@@ -383,16 +383,16 @@ const LANGS = {
     en: {
         label: "EN",
         wordlist: "https://raw.githubusercontent.com/tabatkins/wordle-list/main/words",
-        fallback: ["HOUSE","CHAIR","RAIN","SLEEP","FRIEND","LOVE","WHITE","DOOR","FLOWE","BUILD","SCHOI","WORK","EAT","DRINK","BEAUT","MANY","BIG","TALK","ANGEL","RING"],
+        fallback: ["ERROR"],
         t: {
-            subtitle: "Guess the word in 5 tries",
+            subtitle: "Worleng :>",
             play: "Play",
             restart: "Restart",
             leaderboard: "Leaderboard",
             noData: "No data yet.",
             serverError: "Server unavailable. Try again later.",
             win: "Win!",
-            lose: "Lose! Answer: ",
+            lose: "Lose! Answer ",
             saved: "Saved to leaderboard!",
             saveFail: "Failed to save. Server may be down.",
             namePrompt: "Name for leaderboard:",
